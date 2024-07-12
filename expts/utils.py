@@ -2,7 +2,7 @@ from collections.abc import MutableMapping
 
 # redis cannot store nested dicts
 # https://stackoverflow.com/a/62186053/15368987
-def flatten(dictionary, parent_key=False, separator='.'):
+def flatten(dictionary, parent_key=False, separator='.') -> dict:
     """
     Turn a nested dictionary into a flattened dictionary
     :param dictionary: The dictionary to flatten
@@ -20,5 +20,5 @@ def flatten(dictionary, parent_key=False, separator='.'):
             for k, v in enumerate(value):
                 items.extend(flatten({str(k): v}, new_key).items())
         else:
-            items.append((new_key, value))
+            items.append((new_key, str(value)))
     return dict(items)

@@ -1,6 +1,5 @@
-from typing import Annotated
-from pydantic import BaseModel, AfterValidator
-from pydantic.networks import IPvAnyAddress
+from pydantic import BaseModel
+from pydantic.networks import IPv4Address
 
 class IPModel(BaseModel):
-    ip: Annotated[IPvAnyAddress, AfterValidator(str)]
+    ip: IPv4Address
