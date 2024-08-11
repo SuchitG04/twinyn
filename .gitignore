@@ -1,7 +1,9 @@
 .idea/
 .env
-test.py
+**test**.py
 test.ipynb
 **/__pycache__/**
 **/Geo**
 pyrightconfig.json
+**cache**
+**/coding/**
