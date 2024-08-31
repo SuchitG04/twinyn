@@ -1,4 +1,4 @@
-from prompts import *
+from twinyn.agents.prompts import *
 
 import os
 import psycopg2
@@ -12,10 +12,11 @@ load_dotenv()
 work_dir = Path("coding")
 work_dir.mkdir(exist_ok=True)
 
-@with_requirements(python_packages=["psycopg2"], global_imports=["psycopg2"])
+@with_requirements(python_packages=["psycopg2"], global_imports=["psycopg2", "os"])
 def execute_sql(query: str) -> list:
     """Execute SQL statement and return a list of results."""
-    conn = psycopg2.connect("postgres://postgres:username@localhost:5432/hwinyn")
+    conn_url = os.getenv("CONNECTION_URL")
+    conn = psycopg2.connect(conn_url)
     with conn.cursor() as cursor:
         cursor.execute(
             query
@@ -89,7 +90,7 @@ chat_result = code_executor_agent.initiate_chats(
         {
             "recipient": analyst_agent,
             "message": custom_message,
-            "max_turns": 2,
+            "max_turns": 1,
             "summary_method": "last_msg",
         }
     ]
