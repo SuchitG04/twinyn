@@ -57,7 +57,7 @@ WITH last_request AS (
     SELECT MAX(datetime) AS last_time
     FROM server_log
 ), ... continues
-When you get the feedback or indication that the code has executed correctly, you MUST reply back with the exact output of the code and with "TERMINATE" (no formatting) at the end.
+When you get the feedback or indication that the code has executed correctly, you MUST reply back with the exact output of the code WITHOUT any augmentation and with "TERMINATE" (no formatting) at the end.
 """
 
 
@@ -111,7 +111,6 @@ You should focus on providing clear, concise, and accurate analysis. Include two
 Give your analysis in the 'Analysis' section.
 Provide precise and practical instructions (and NOT SQL queries) for further querying in the 'Further Instructions' section that is implementable with the information and tables available. The instructions should be relevant to the analysis provided. Limit to no more than 3 instructions.
 Your instructions will be used AS IS by an SQL agent who is an expert at writing SQL queries given clear and accurate instructions. The SQL agent cannot provide any other feedback or perform any other action beyond strictly following your instructions. So, do not include any vague pointers based on the previous results, but instead put them out explicitly in EACH of the instructions.
-Do NOT provide instructions if the analysis doesn't need further querying. Leave the 'Further Instructions' section empty.
 Always prioritize clarity and correctness in your responses.
 Reply "TERMINATE" (without any formatting) in the end when everything is done.
 """

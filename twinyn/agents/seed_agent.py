@@ -1,5 +1,7 @@
 import re
+import textwrap
 from typing import Callable
+from textwrap import dedent
 
 import twinyn.agents.prompts as prompts
 
@@ -8,12 +10,25 @@ from autogen.coding import LocalCommandLineCodeExecutor
 from autogen import ChatResult
 
 class SeedTask:
+    """
+    SeedTask configures the SQL and Analyst agents, and initiates the conversation between them given a seed prompt.
+
+    Attributes:
+        executor (LocalCommandLineCodeExecutor): An executor configured to execute code in the directory of your choice.
+        llm_config_sqlagent (dict): LLM configuration for the SQL agent.
+        llm_config_analystagent (dict): LLM configuration for the Analyst agent.
+        seed_prompt (str): The seed prompt that kicks of the conversation.
+        sql_agent_sys_prompt (str, optional): The system prompt for the SQL agent. Prompt from `twinyn.agents.prompts`
+        is used if not provided.
+        analyst_agent_sys_prompt (str, optional): The system prompt for the Analyst agent. Prompt from `twinyn.agents.prompts`
+        is used if not provided.
+    """
+
     def __init__(
         self,
         executor: LocalCommandLineCodeExecutor,
         llm_config_sqlagent: dict,
         llm_config_analystagent: dict,
-        custom_msg_fn: Callable[[any, any, dict], str | dict],
         seed_prompt: str,
         sql_agent_sys_prompt: str | None = None,
         analyst_agent_sys_prompt: str | None = None,
@@ -21,7 +36,6 @@ class SeedTask:
         self.executor = executor
         self.llm_config_sqlagent = llm_config_sqlagent
         self.llm_config_analystagent = llm_config_analystagent
-        self.custom_msg_fn = custom_msg_fn
         self.seed_prompt = seed_prompt
 
         self.chat_result = None
@@ -60,7 +74,21 @@ class SeedTask:
             llm_config=self.llm_config_analystagent,
         )
 
+    def _build_analyst_prompt(self, sender: ConversableAgent, recipient: ConversableAgent, context: dict) -> str:
+        """Builds a custom prompt for the analyst agent using the seed prompt and the execution result."""
+        query = self.seed_prompt
+        result = context.get("carryover", "")
+        prompt = f"""\
+            Query:
+            {query}
+            
+            Result:
+            {result}
+        """
+        return textwrap.dedent(prompt)
+
     def kickoff(self):
+        """Kicks off the conversation between the agents."""
         self.chat_result = self.code_executor_agent.initiate_chats(
             [
                 {
@@ -73,7 +101,7 @@ class SeedTask:
                 },
                 {
                     "recipient": self.analyst_agent,
-                    "message": self.custom_msg_fn,
+                    "message": self._build_analyst_prompt,
                     "max_turns": 1,
                     "summary_method": "last_msg",
                 }
@@ -82,6 +110,17 @@ class SeedTask:
 
 
 class SeedOutput:
+    """
+    SeedOutput holds the agent's output, collects relevant parts of the conversation into class variables.
+
+    Attributes:
+        agent_output (list[ChatResult]): A list of `ChatResult` objects having conversation history of one agentic conversation.
+        seed_prompt (str): The seed prompt used to start the conversation.
+        code_res_msg (str): The execution results of the SQL query.
+        analysis_msg (str): The analysis generated based on the execution results of the SQL query.
+        parsed_instructions (list[str]): A list of further instructions to be sent to the SQL agent.
+    """
+
     def __init__(self, agent_output: list[ChatResult]):
         self.agent_output = agent_output
         self.seed_prompt: str = None
@@ -90,22 +129,27 @@ class SeedOutput:
         self.parsed_instructions: list[str] = None
 
     def __exclude_terminate_word(self, msg: str):
+        """Excludes any 'TERMINATE' signals included in the output by agents."""
         return '\n'.join(msg.strip().split('\n')[:-1])
 
+    def __list_instructions(self, msg: str):
+        """Takes an input string having numbered points and return the points without the numbers."""
+        pattern = r'\d+\.\s+([^\n]+)'
+        instructions = re.findall(pattern, msg, re.DOTALL)
+        return [i.strip() for i in instructions]
+
     def _collect_msgs(self):
+        """Collects relevant messages from the agents and store it in appropriate variables."""
         code_res = self.agent_output[0].chat_history[-2:]
         self.code_res_msg = code_res[0]['content'] + "\n" + code_res[1]['content']
         self.code_res_msg = self.__exclude_terminate_word(self.code_res_msg)
 
-        analysis = self.agent_output[1].chat_history[-1]['content']
-        self.analysis_msg = self.__exclude_terminate_word(analysis)
-
-    def _parse_instructions(self):
-        pattern = r'\d+\.\s+([^\n]+(?:\n(?!\d+\.).*)*)'
-        instructions = re.findall(pattern, self.analysis_msg, re.DOTALL)
-        self.parsed_instructions = [instr.strip() for instr in instructions]
+        analysis_instr_msg = self.agent_output[1].chat_history[-1]['content']
+        split_msg = analysis_instr_msg.split("Further Instructions:")
+        self.analysis_msg = split_msg[0].strip()
+        self.parsed_instructions = self.__list_instructions(analysis_instr_msg)
 
     def collect(self):
+        """Wrapper function to collect the seed prompt, code execution message, analysis message and instructions."""
         self.seed_prompt = self.agent_output[0].chat_history[0]['content']
         self._collect_msgs()
-        self._parse_instructions()
