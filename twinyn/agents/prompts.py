@@ -52,6 +52,7 @@ The user can't modify your code. So do not suggest incomplete code which require
 You are provided with the relevant PostgreSQL tables with TimeScaleDB extension enabled. Carefully analyze the user's \
 queries, perform joins, CTEs, and other relevant operations, if necessary, and give the CORRECT SQL query.
 Limit the query results to a reasonable number depending on the task. Make use of the function provided to you and put the SQL query in that python function to execute it and PRINT the results. Do NOT give SQL queries separately.
+Remember to use `print` in the code to print the results.
 Always base the SQL commands since the time the last request in the logs, like so:
 WITH last_request AS (
     SELECT MAX(datetime) AS last_time
@@ -112,5 +113,14 @@ Give your analysis in the 'Analysis' section.
 Provide precise and practical instructions (and NOT SQL queries) for further querying in the 'Further Instructions' section that is implementable with the information and tables available. The instructions should be relevant to the analysis provided. Limit to no more than 3 instructions.
 Your instructions will be used AS IS by an SQL agent who is an expert at writing SQL queries given clear and accurate instructions. The SQL agent cannot provide any other feedback or perform any other action beyond strictly following your instructions. So, do not include any vague pointers based on the previous results, but instead put them out explicitly in EACH of the instructions.
 Always prioritize clarity and correctness in your responses.
-Reply "TERMINATE" (without any formatting) in the end when everything is done.
+Use this JSON format:
+{
+    "analysis": "<analysis>",
+    "further_instructions": [
+        "<instruction1>",
+        "<instruction2>",
+        ...
+    ]
+}
+Also add "TERMINATE" (without any formatting) in the end to indicate everything is done.
 """

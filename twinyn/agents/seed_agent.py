@@ -1,9 +1,10 @@
 import re
+import json
 import textwrap
 from typing import Callable
 from textwrap import dedent
 
-import twinyn.agents.prompts as prompts
+import agents.prompts as prompts
 
 from autogen import AssistantAgent, ConversableAgent
 from autogen.coding import LocalCommandLineCodeExecutor
@@ -142,12 +143,13 @@ class SeedOutput:
         """Collects relevant messages from the agents and store it in appropriate variables."""
         code_res = self.agent_output[0].chat_history[-2:]
         self.code_res_msg = code_res[0]['content'] + "\n" + code_res[1]['content']
-        self.code_res_msg = self.__exclude_terminate_word(self.code_res_msg)
+        self.code_res_msg = self.code_res_msg.replace("TERMINATE", "")
 
         analysis_instr_msg = self.agent_output[1].chat_history[-1]['content']
-        split_msg = analysis_instr_msg.split("Further Instructions:")
-        self.analysis_msg = split_msg[0].strip()
-        self.parsed_instructions = self.__list_instructions(analysis_instr_msg)
+        analysis_instr_msg = analysis_instr_msg.replace("TERMINATE", "").strip()
+        analysis_instr_msg = json.loads(analysis_instr_msg)
+        self.analysis_msg = analysis_instr_msg["analysis"]
+        self.parsed_instructions = analysis_instr_msg["further_instructions"]
 
     def collect(self):
         """Wrapper function to collect the seed prompt, code execution message, analysis message and instructions."""
