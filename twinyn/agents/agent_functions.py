@@ -6,9 +6,15 @@ from autogen.coding.func_with_reqs import with_requirements
 def execute_sql(query: str) -> list:
     """Execute SQL statement and return a list of results. Does NOT print the results."""
     conn = psycopg2.connect(os.getenv("CONNECTION_URL"))
-    with conn.cursor() as cursor:
-        cursor.execute(
-            query
-        )
-        res = cursor.fetchall()
-        return res
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                query
+            )
+            res = cursor.fetchall()
+    except Exception as e:
+        raise e
+    else:
+        print("TERMINATE")
+
+    return res
